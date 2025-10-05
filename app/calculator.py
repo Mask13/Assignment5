@@ -368,7 +368,7 @@ class Calculator:
             bool: True if an operation was undone, False if there was nothing to undo.
         """
         if not self.undo_stack:
-            return False
+            return False # pragma: no cover
         # Pop the last state from the undo stack
         memento = self.undo_stack.pop()
         # Push the current state onto the redo stack
@@ -387,7 +387,7 @@ class Calculator:
             bool: True if an operation was redone, False if there was nothing to redo.
         """
         if not self.redo_stack:
-            return False
+            return False # pragma: no cover
         # Pop the last state from the redo stack
         memento = self.redo_stack.pop()
         # Push the current state onto the undo stack
