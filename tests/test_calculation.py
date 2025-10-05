@@ -4,6 +4,7 @@ from datetime import datetime
 from app.calculation import Calculation
 from app.exceptions import OperationError
 import logging
+from unittest.mock import patch
 
 
 def test_addition():
@@ -54,7 +55,6 @@ def test_invalid_root():
 def test_unknown_operation():
     with pytest.raises(OperationError, match="Unknown operation"):
         Calculation(operation="Unknown", operand1=Decimal("5"), operand2=Decimal("3"))
-
 
 def test_to_dict():
     calc = Calculation(operation="Addition", operand1=Decimal("2"), operand2=Decimal("3"))
@@ -108,6 +108,42 @@ def test_equality():
     assert calc1 == calc2
     assert calc1 != calc3
 
+
+def test_eq_returns_not_implemented_for_other_types():
+    """Test that __eq__ returns NotImplemented for incompatible types."""
+    calc = Calculation(operation="Addition", operand1=Decimal("1"), operand2=Decimal("2"))
+    # Directly call __eq__ and check for NotImplemented
+    assert calc.__eq__("a string") is NotImplemented
+    assert calc.__eq__(123) is NotImplemented
+
+
+def test_str_representation():
+    """Test the string representation of a Calculation object."""
+    calc = Calculation(operation="Addition", operand1=Decimal("10"), operand2=Decimal("5"))
+    expected_str = "Addition(10, 5) = 15"
+    assert str(calc) == expected_str
+
+def test_repr_representation():
+    """Test the repr representation of a Calculation object."""
+    calc = Calculation(operation="Multiplication", operand1=Decimal("4"), operand2=Decimal("5"))
+    expected_repr = "Calculation(operation='Multiplication', operand1=4, operand2=5, result=20, timestamp="
+    assert repr(calc).startswith(expected_repr)
+
+
+def test_calculation_exception_block_triggered():
+    """
+    Ensure that exceptions raised during the internal computation are caught
+    and converted into OperationError by the calculate() method.
+
+    We patch builtins.pow to raise a ValueError so that the 'Power'
+    operation triggers the except branch inside calculate().
+    """
+    # patch the pow symbol used by the calculation module so the local
+    # calls to pow(...) inside app.calculation are intercepted
+    with patch('app.calculation.pow', side_effect=ValueError('boom')):
+        with pytest.raises(OperationError, match="Calculation failed: boom"):
+            # Construction calls calculate() via __post_init__ so this will run the patched pow
+            Calculation(operation="Power", operand1=Decimal("2"), operand2=Decimal("3"))
 
 # New Test to Cover Logging Warning
 def test_from_dict_result_mismatch(caplog):
