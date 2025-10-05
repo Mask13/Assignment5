@@ -2,263 +2,107 @@
 
 ---
 
-# 🧩 1. Install Homebrew (Mac Only)
+# Calculator — README
 
-> Skip this step if you're on Windows.
+This repository contains an educational, extensible calculator application implemented in Python. It demonstrates several object-oriented design patterns (Strategy, Observer, Memento, Factory) and uses pandas for simple history persistence.
 
-Homebrew is a package manager for macOS.  
-You’ll use it to easily install Git, Python, Docker, etc.
+This README explains how to set up the project, run the interactive REPL, run tests, and where to look for logs and history files.
 
-**Install Homebrew:**
+## Requirements
 
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-**Verify Homebrew:**
+- Python 3.10+
+- Install dependencies:
 
 ```bash
-brew --version
-```
-
-If you see a version number, you're good to go.
-
----
-
-# 🧩 2. Install and Configure Git
-
-## Install Git
-
-- **MacOS (using Homebrew)**
-
-```bash
-brew install git
-```
-
-- **Windows**
-
-Download and install [Git for Windows](https://git-scm.com/download/win).  
-Accept the default options during installation.
-
-**Verify Git:**
-
-```bash
-git --version
-```
-
----
-
-## Configure Git Globals
-
-Set your name and email so Git tracks your commits properly:
-
-```bash
-git config --global user.name "Your Name"
-git config --global user.email "your_email@example.com"
-```
-
-Confirm the settings:
-
-```bash
-git config --list
-```
-
----
-
-## Generate SSH Keys and Connect to GitHub
-
-> Only do this once per machine.
-
-1. Generate a new SSH key:
-
-```bash
-ssh-keygen -t ed25519 -C "your_email@example.com"
-```
-
-(Press Enter at all prompts.)
-
-2. Start the SSH agent:
-
-```bash
-eval "$(ssh-agent -s)"
-```
-
-3. Add the SSH private key to the agent:
-
-```bash
-ssh-add ~/.ssh/id_ed25519
-```
-
-4. Copy your SSH public key:
-
-- **Mac/Linux:**
-
-```bash
-cat ~/.ssh/id_ed25519.pub | pbcopy
-```
-
-- **Windows (Git Bash):**
-
-```bash
-cat ~/.ssh/id_ed25519.pub | clip
-```
-
-5. Add the key to your GitHub account:
-   - Go to [GitHub SSH Settings](https://github.com/settings/keys)
-   - Click **New SSH Key**, paste the key, save.
-
-6. Test the connection:
-
-```bash
-ssh -T git@github.com
-```
-
-You should see a success message.
-
----
-
-# 🧩 3. Clone the Repository
-
-Now you can safely clone the course project:
-
-```bash
-git clone <repository-url>
-cd <repository-directory>
-```
-
----
-
-# 🛠️ 4. Install Python 3.10+
-
-## Install Python
-
-- **MacOS (Homebrew)**
-
-```bash
-brew install python
-```
-
-- **Windows**
-
-Download and install [Python for Windows](https://www.python.org/downloads/).  
-✅ Make sure you **check the box** `Add Python to PATH` during setup.
-
-**Verify Python:**
-
-```bash
-python3 --version
-```
-or
-```bash
-python --version
-```
-
----
-
-## Create and Activate a Virtual Environment
-
-(Optional but recommended)
-
-```bash
-python3 -m venv venv
-source venv/bin/activate   # Mac/Linux
-venv\Scripts\activate.bat  # Windows
-```
-
-### Install Required Packages
-
-```bash
+python -m venv .venv
+source .venv/bin/activate   # mac/linux
+.venv\Scripts\activate.bat # windows
 pip install -r requirements.txt
 ```
 
----
+If `requirements.txt` is empty or missing, the project relies on the standard library plus pandas. Install pandas manually if needed: `pip install pandas`.
 
-# 🐳 5. (Optional) Docker Setup
+## Run the application (REPL)
 
-> Skip if Docker isn't used in this module.
-
-## Install Docker
-
-- [Install Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/)
-- [Install Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
-
-## Build Docker Image
-
-```bash
-docker build -t <image-name> .
-```
-
-## Run Docker Container
-
-```bash
-docker run -it --rm <image-name>
-```
-
----
-
-# 🚀 6. Running the Project
-
-- **Without Docker**:
+Start the interactive calculator REPL:
 
 ```bash
 python main.py
 ```
 
-(or update this if the main script is different.)
+Once started, you can use these commands:
 
-- **With Docker**:
+- `help` — show commands
+- `add`, `subtract`, `multiply`, `divide`, `power`, `root` — perform operations
+- `history` — show recent calculations
+- `clear` — clear history
+- `undo` / `redo` — undo or redo last operation
+- `save` / `load` — persist or reload history to/from disk
+- `exit` — exit the REPL (saves history on exit)
 
-```bash
-docker run -it --rm <image-name>
+When performing an operation, the REPL will prompt for two numbers (enter `cancel` to abort).
+
+Examples:
+
+```
+> add
+First number: 2
+Second number: 3
+Result: 5
+
+> history
+1. Addition(2, 3) = 5
 ```
 
----
+## Configuration
 
-# 📝 7. Submission Instructions
+Configuration is handled by `app/calculator_config.py` via the `CalculatorConfig` class. By default files are stored under the project `base_dir`. You can pass a custom config when constructing `Calculator(config=CalculatorConfig(...))` in code or tests.
 
-After finishing your work:
+- Logs: default `logs/calculator.log` (configurable)
+- History: default `history/calculator_history.csv` (configurable)
+
+Note: The Calculator implementation configures logging during initialization. Tests may patch or avoid that configuration to capture logs reliably.
+
+## Tests
+
+Run the unit test suite with pytest:
 
 ```bash
-git add .
-git commit -m "Complete Module X"
-git push origin main
+pytest -q
 ```
 
-Then submit the GitHub repository link as instructed.
+Testing notes:
+- Many tests use temporary directories and patch `CalculatorConfig` properties to avoid touching your real filesystem.
+- Some tests patch module-level logging functions (or `_setup_logging`) because the application configures logging with `basicConfig(force=True)` which can detach pytest's `caplog` handler.
+
+## Developer notes
+
+- Code lives in the `app/` package. Key modules:
+   - `calculation.py` — Calculation value object and arithmetic handling
+   - `calculator.py` — Calculator orchestration (history, observers, persistence)
+   - `calculator_repl.py` — REPL UI
+   - `history.py` — Observer implementations (auto-save, logging)
+
+- Persistence currently uses CSV via pandas for history. Consider Parquet or a small embedded DB for larger datasets.
+- The code demonstrates Strategy, Observer, Factory, and Memento patterns — useful as a template for extensible apps.
+
+## Continuous Integration
+
+A workflow is included at `.github/workflows/ci.yml` which runs pytest on pushes and pull requests.
+
+## Contributing
+
+If you want to extend the project:
+
+- Add new operations by implementing the Operation interface and registering via OperationFactory.
+- Add new observers by extending `HistoryObserver` and registering with `Calculator.add_observer()`.
+- Keep I/O isolated so unit tests can patch it easily (avoid global side-effects at import-time).
+
+## Contacts / Attribution
+
+Author: Aaron Samuel and Thomas Licciardello
 
 ---
 
-# 🔥 Useful Commands Cheat Sheet
-
-| Action                         | Command                                          |
-| ------------------------------- | ------------------------------------------------ |
-| Install Homebrew (Mac)          | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
-| Install Git                     | `brew install git` or Git for Windows installer |
-| Configure Git Global Username  | `git config --global user.name "Your Name"`      |
-| Configure Git Global Email     | `git config --global user.email "you@example.com"` |
-| Clone Repository                | `git clone <repo-url>`                          |
-| Create Virtual Environment     | `python3 -m venv venv`                           |
-| Activate Virtual Environment   | `source venv/bin/activate` / `venv\Scripts\activate.bat` |
-| Install Python Packages        | `pip install -r requirements.txt`               |
-| Build Docker Image              | `docker build -t <image-name> .`                |
-| Run Docker Container            | `docker run -it --rm <image-name>`               |
-| Push Code to GitHub             | `git add . && git commit -m "message" && git push` |
-
----
-
-# 📋 Notes
-
-- Install **Homebrew** first on Mac.
-- Install and configure **Git** and **SSH** before cloning.
-- Use **Python 3.10+** and **virtual environments** for Python projects.
-- **Docker** is optional depending on the project.
-
----
-
-# 📎 Quick Links
-
-- [Homebrew](https://brew.sh/)
-- [Git Downloads](https://git-scm.com/downloads)
-- [Python Downloads](https://www.python.org/downloads/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [GitHub SSH Setup Guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+If you want the README to include a quick developer setup section for VS Code, or to switch history persistence to Parquet with atomic saves, tell me which you'd prefer and I can add it.
+   - Click **New SSH Key**, paste the key, save.
